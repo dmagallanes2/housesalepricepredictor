@@ -9,8 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 from sklearn.model_selection import cross_val_score, KFold, learning_curve, train_test_split
-from sklearn.metrics.regression import mean_squared_error
-from sklearn.metrics import r2_score, mean_absolute_error
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from scipy import stats
 
 # Configure page
