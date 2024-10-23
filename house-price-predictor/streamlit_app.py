@@ -33,6 +33,10 @@ logger = logging.getLogger(__name__)
 
 def load_and_train():
     """Load data and train model"""
+    st.markdown("""
+    ### Step 1: Upload Training Data
+    Upload the house sales dataset (train.csv) to begin. This will be used to train the model.
+    """)
     try:
         # Load and validate data
         uploaded_file = st.file_uploader("Upload your housing dataset (CSV)", type="csv")
@@ -90,6 +94,7 @@ def load_and_train():
                     
                     with tab1:
                         # House Price Distribution
+                        st.markdown("This histogram shows the distribution of house prices in the dataset.")
                         fig = px.histogram(
                             data,
                             x='SalePrice',
@@ -105,6 +110,7 @@ def load_and_train():
                     
                     with tab2:
                         # Price vs Living Area Scatter
+                        st.markdown("This scatter plot shows the relationship between living area and house prices.")
                         fig = px.scatter(
                             data,
                             x='GrLivArea',
@@ -120,6 +126,7 @@ def load_and_train():
                     
                     with tab3:
                         # Price Distribution by Neighborhood
+                        st.markdown("This box plot shows how house prices vary across different neighborhoods.")
                         fig = px.box(
                             data,
                             x='Neighborhood',
@@ -136,6 +143,7 @@ def load_and_train():
                     
                     with tab4:
                         # Price Distribution with Percentiles
+                        st.markdown("This plot shows the price distribution with key percentile markers.")
                         prices_sorted = sorted(data['SalePrice'])
                         fig = go.Figure()
                         fig.add_trace(go.Scatter(
@@ -170,6 +178,7 @@ def load_and_train():
                     
                     with tab5:
                         # Area vs Price with Trend
+                        st.markdown("This scatter plot shows the relationship between area and price with a trend line.")
                         fig = px.scatter(
                             data,
                             x='GrLivArea',
@@ -210,16 +219,49 @@ def make_prediction():
         
         # Create two columns for inputs
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            lot_area = st.number_input("Lot Area (sq ft)", min_value=1000, max_value=100000, value=10000)
-            gr_liv_area = st.number_input("Living Area (sq ft)", min_value=500, max_value=10000, value=1500)
-            year_built = st.number_input("Year Built", min_value=1800, max_value=2024, value=2000)
-            
+            lot_area = st.slider(
+                "Lot Area (sq ft)", 
+                min_value=1000, 
+                max_value=100000, 
+                value=10000,
+                step=100,
+                help="Total square footage of the property lot"
+            )
+            gr_liv_area = st.slider(
+                "Living Area (sq ft)", 
+                min_value=500, 
+                max_value=10000, 
+                value=1500,
+                step=100,
+                help="Above ground living area in square feet"
+            )
+            year_built = st.slider(
+                "Year Built", 
+                min_value=1800, 
+                max_value=2024, 
+                value=2000,
+                step=1,
+                help="Original construction year of the house"
+            )
+
         with col2:
-            overall_qual = st.slider("Overall Quality", min_value=1, max_value=10, value=7)
-            neighborhood = st.selectbox("Neighborhood", sorted(st.session_state.model.data['Neighborhood'].unique()))
-            house_style = st.selectbox("House Style", sorted(st.session_state.model.data['HouseStyle'].unique()))
+            overall_qual = st.slider(
+                "Overall Quality", 
+                min_value=1, 
+                max_value=10, 
+                value=7,
+                help="Overall material and finish quality (1=Poor, 10=Excellent)"
+            )
+            neighborhood = st.selectbox(
+                "Neighborhood", 
+                sorted(st.session_state.model.data['Neighborhood'].unique())
+            )
+            house_style = st.selectbox(
+                "House Style", 
+                sorted(st.session_state.model.data['HouseStyle'].unique())
+            )
         
         # Make prediction
         if st.button("Predict Price"):
@@ -349,6 +391,11 @@ def make_prediction():
         
 def show_validation_results():
     """Display model validation results and visualizations"""
+    st.markdown("""
+    ### Model Validation Results
+    This section shows detailed analysis of model performance including cross-validation scores,
+    error metrics, and various visualizations of model behavior.
+    """)
     try:
         if not st.session_state.model_trained:
             st.warning("Please train the model first!")
@@ -371,6 +418,12 @@ def show_validation_results():
 
         # 1. Cross-Validation
         st.subheader("1. Cross-Validation Results")
+        st.markdown("""
+        Cross-validation splits the data into multiple parts to test model performance:
+        - R² scores show how well the model performs on different subsets of data
+        - Mean CV R² shows the average performance
+        - Higher R² values (closer to 1.0) indicate better model performance
+        """)
         kfold = KFold(n_splits=5, shuffle=True, random_state=42)
         cv_scores = cross_val_score(model, X_train, y_train, cv=kfold, scoring='r2')
         
@@ -379,6 +432,11 @@ def show_validation_results():
 
         # 2. Performance Metrics
         st.subheader("2. Performance Metrics")
+        st.markdown("""
+        RMSE (Root Mean Square Error): Measures the average prediction error in dollars
+        R² Score: Indicates how well the model fits the data (0 to 1, higher is better)
+        MAE (Mean Absolute Error): Average absolute difference between predicted and actual prices
+        """)
         y_pred_train = model.predict(X_train)
         y_pred_test = model.predict(X_test)
 
@@ -397,6 +455,13 @@ def show_validation_results():
 
         # 3. Residual Analysis
         st.subheader("3. Residual Analysis")
+        st.markdown("""
+        Residual analysis helps understand prediction errors:
+        - Mean of residuals: Average prediction error (closer to $0 is better)
+        - Standard deviation: Spread of prediction errors
+        - Skewness: Measures asymmetry of errors
+        - Kurtosis: Measures the 'tailedness' of error distribution
+        """)
         residuals = y_test - y_pred_test
         
         st.write(f"Mean of residuals: ${residuals.mean():,.2f}")
@@ -501,6 +566,12 @@ def main():
     """Main application function"""
     # App title
     st.title("🏠 House Price Predictor")
+    st.markdown("""
+    This app predicts house prices based on various features. Follow these steps:
+    1. Upload the training data (train.csv)
+    2. Train the model
+    3. Make predictions on new properties
+    """)
     
     # Create tabs
     tab1, tab2, tab3 = st.tabs(["Train Model", "Make Predictions", "Model Validation"])

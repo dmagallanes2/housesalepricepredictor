@@ -115,6 +115,7 @@ class DataProcessor:
         Returns:
         pd.DataFrame: Similar properties
         """
+        df = df.copy()
         df['price_diff'] = abs(df['SalePrice'] - target_price)
         similar = df.nsmallest(n_properties, 'price_diff')
         return similar.drop('price_diff', axis=1)
