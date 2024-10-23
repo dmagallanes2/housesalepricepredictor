@@ -331,7 +331,7 @@ def make_prediction():
                 
                 # Create three visualization columns
                 col1, col2, col3 = st.columns(3)
-                
+
                 with col1:
                     # Price Comparison Bar Chart
                     prices = [price_min, prediction, price_avg, price_max]
@@ -345,23 +345,35 @@ def make_prediction():
                         title_x=0.5
                     )
                     st.plotly_chart(fig, use_container_width=True)
-                
+                    st.markdown("*This graph compares your predicted price with the minimum, average, and maximum prices of similar properties.*")
+
                 with col2:
-                    # Similar Properties Pie Chart
-                    total_properties = len(st.session_state.model.data)
+                    # Quality vs Price Comparison
+                    quality_prices = st.session_state.model.data.groupby('OverallQual')['SalePrice'].mean().reset_index()
                     fig = go.Figure(data=[
-                        go.Pie(
-                            labels=[f'Similar\n({similar_count})', f'Other\n({total_properties - similar_count})'],
-                            values=[similar_count, total_properties - similar_count],
-                            marker_colors=['lightblue', 'gray']
+                        go.Scatter(
+                            x=quality_prices['OverallQual'],
+                            y=quality_prices['SalePrice'],
+                            mode='lines+markers',
+                            name='Average Price'
                         )
                     ])
+                    fig.add_trace(go.Scatter(
+                        x=[overall_qual],
+                        y=[prediction],
+                        mode='markers',
+                        marker=dict(size=12, color='red', symbol='star'),
+                        name='Your Property'
+                    ))
                     fig.update_layout(
-                        title='Similar Properties Distribution',
+                        title='Price vs Quality Rating',
+                        xaxis_title='Overall Quality',
+                        yaxis_title='Price ($)',
                         title_x=0.5
                     )
                     st.plotly_chart(fig, use_container_width=True)
-                
+                    st.markdown("*This graph shows how your predicted price compares to average prices for different quality ratings.*")
+
                 with col3:
                     # Neighborhood Price Distribution
                     neighborhood_data = st.session_state.model.data[
@@ -384,6 +396,7 @@ def make_prediction():
                         yaxis_title="Count"
                     )
                     st.plotly_chart(fig, use_container_width=True)
+                    st.markdown("*This histogram shows where your predicted price falls within the selected neighborhood's price distribution.*")
                     
     except Exception as e:
         logger.error(f"Error in make_prediction: {str(e)}")
@@ -391,17 +404,17 @@ def make_prediction():
         
 def show_validation_results():
     """Display model validation results and visualizations"""
-    st.markdown("""
-    ### Model Validation Results
-    This section shows detailed analysis of model performance including cross-validation scores,
-    error metrics, and various visualizations of model behavior.
-    """)
+
     try:
         if not st.session_state.model_trained:
             st.warning("Please train the model first!")
             return
 
         st.header("🔍 Model Validation Suite")
+        st.markdown("""
+        This section shows detailed analysis of model performance including cross-validation scores,
+        error metrics, and various visualizations of model behavior.
+        """)
         
         # Get model and data from session state
         model = st.session_state.model.model
