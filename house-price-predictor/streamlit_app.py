@@ -418,12 +418,7 @@ def show_validation_results():
 
         # 1. Cross-Validation
         st.subheader("1. Cross-Validation Results")
-        st.markdown("""
-        Cross-validation splits the data into multiple parts to test model performance:
-        - R² scores show how well the model performs on different subsets of data
-        - Mean CV R² shows the average performance
-        - Higher R² values (closer to 1.0) indicate better model performance
-        """)
+        
         kfold = KFold(n_splits=5, shuffle=True, random_state=42)
         cv_scores = cross_val_score(model, X_train, y_train, cv=kfold, scoring='r2')
         
@@ -432,11 +427,7 @@ def show_validation_results():
 
         # 2. Performance Metrics
         st.subheader("2. Performance Metrics")
-        st.markdown("""
-        RMSE (Root Mean Square Error): Measures the average prediction error in dollars
-        R² Score: Indicates how well the model fits the data (0 to 1, higher is better)
-        MAE (Mean Absolute Error): Average absolute difference between predicted and actual prices
-        """)
+
         y_pred_train = model.predict(X_train)
         y_pred_test = model.predict(X_test)
 
@@ -455,13 +446,7 @@ def show_validation_results():
 
         # 3. Residual Analysis
         st.subheader("3. Residual Analysis")
-        st.markdown("""
-        Residual analysis helps understand prediction errors:
-        - Mean of residuals: Average prediction error (closer to $0 is better)
-        - Standard deviation: Spread of prediction errors
-        - Skewness: Measures asymmetry of errors
-        - Kurtosis: Measures the 'tailedness' of error distribution
-        """)
+        
         residuals = y_test - y_pred_test
         
         st.write(f"Mean of residuals: ${residuals.mean():,.2f}")
