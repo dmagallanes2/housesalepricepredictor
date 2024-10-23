@@ -73,6 +73,8 @@ def load_and_train():
             
             # Show initial visualizations
             if st.session_state.data_loaded:
+                st.header("📊 Data Exploration and Visualization")
+                st.markdown("Explore the dataset through various visualizations to understand price distributions, relationships, and trends.")
                 with st.expander("View Data Analysis", expanded=True):
                     # Create tabs for different visualizations
                     tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -237,36 +239,50 @@ def make_prediction():
                 # Display formatted prediction results
                 st.markdown("═══ House Price Prediction ═══")
                 st.markdown(f"💰 **Predicted Price:** ${prediction:,.2f}")
-                
+
                 st.markdown("\n📊 **Property Details:**")
                 current_year = datetime.now().year
                 age = current_year - year_built
-                
-                details = f"""
-                • Living Area: {gr_liv_area:,} sq ft
-                • Lot Size: {lot_area:,} sq ft
-                • Quality Rating: {overall_qual}/10
-                • Age: {age} years
-                • Style: {house_style}
-                • Location: {neighborhood}
-                """
-                st.markdown(details)
-                
-                # Market Analysis
-                st.markdown("\n📈 **Market Analysis:**")
+
+                # Format each detail on its own line
+                st.markdown("""
+                - Living Area: {} sq ft
+
+                - Lot Size: {} sq ft
+
+                - Quality Rating: {}/10
+
+                - Age: {} years
+
+                - Style: {}
+
+                - Location: {}
+                """.format(
+                    f"{gr_liv_area:,}",
+                    f"{lot_area:,}",
+                    overall_qual,
+                    age,
+                    house_style,
+                    neighborhood
+                ))
+
+                # Calculate market analysis values
                 similar_count = len(similar_props)
                 price_min = similar_props['SalePrice'].min()
                 price_avg = similar_props['SalePrice'].mean()
                 price_max = similar_props['SalePrice'].max()
-                
-                analysis = f"""
-                • Similar Properties: {similar_count}
-                • Price Range in Area:
+
+                # Market Analysis with better spacing
+                st.markdown("\n📈 **Market Analysis:**")
+                st.markdown(f"• Similar Properties: {similar_count}")
+                st.markdown("\n• Price Range in Area:")
+                st.markdown(f"""
                 - Minimum: ${price_min:,.2f}
+
                 - Average: ${price_avg:,.2f}
+
                 - Maximum: ${price_max:,.2f}
-                """
-                st.markdown(analysis)
+                """)
                 
                 # Create three visualization columns
                 col1, col2, col3 = st.columns(3)
