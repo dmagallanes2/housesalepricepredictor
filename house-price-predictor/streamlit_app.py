@@ -8,6 +8,10 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+from sklearn.model_selection import cross_val_score, KFold, learning_curve, train_test_split
+from sklearn.metrics.regression import mean_squared_error
+from sklearn.metrics import r2_score, mean_absolute_error
+from scipy import stats
 
 # Configure page
 st.set_page_config(
@@ -343,6 +347,156 @@ def make_prediction():
     except Exception as e:
         logger.error(f"Error in make_prediction: {str(e)}")
         st.error(f"An error occurred: {str(e)}")
+        
+def show_validation_results():
+    """Display model validation results and visualizations"""
+    try:
+        if not st.session_state.model_trained:
+            st.warning("Please train the model first!")
+            return
+
+        st.header("🔍 Model Validation Suite")
+        
+        # Get model and data from session state
+        model = st.session_state.model.model
+        data = st.session_state.model.data
+        
+        # Prepare features
+        X = pd.get_dummies(data.drop('SalePrice', axis=1))
+        y = data['SalePrice']
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+        # 1. Cross-Validation
+        st.subheader("1. Cross-Validation Results")
+        kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+        cv_scores = cross_val_score(model, X_train, y_train, cv=kfold, scoring='r2')
+        
+        st.write(f"Cross-validation R² scores: {cv_scores}")
+        st.write(f"Mean CV R²: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})")
+
+        # 2. Performance Metrics
+        st.subheader("2. Performance Metrics")
+        y_pred_train = model.predict(X_train)
+        y_pred_test = model.predict(X_test)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("Training Set Metrics:")
+            st.write(f"RMSE: ${np.sqrt(mean_squared_error(y_train, y_pred_train)):,.2f}")
+            st.write(f"R²: {r2_score(y_train, y_pred_train):.4f}")
+            st.write(f"MAE: ${mean_absolute_error(y_train, y_pred_train):,.2f}")
+        
+        with col2:
+            st.write("Test Set Metrics:")
+            st.write(f"RMSE: ${np.sqrt(mean_squared_error(y_test, y_pred_test)):,.2f}")
+            st.write(f"R²: {r2_score(y_test, y_pred_test):.4f}")
+            st.write(f"MAE: ${mean_absolute_error(y_test, y_pred_test):,.2f}")
+
+        # 3. Residual Analysis
+        st.subheader("3. Residual Analysis")
+        residuals = y_test - y_pred_test
+        
+        st.write(f"Mean of residuals: ${residuals.mean():,.2f}")
+        st.write(f"Standard deviation of residuals: ${residuals.std():,.2f}")
+        st.write(f"Skewness of residuals: {stats.skew(residuals):.4f}")
+        st.write(f"Kurtosis of residuals: {stats.kurtosis(residuals):.4f}")
+
+        # Create three columns for visualizations
+        st.subheader("Model Performance Visualizations")
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            # Cross-validation scores distribution
+            fig = go.Figure()
+            fig.add_trace(go.Box(y=cv_scores, name='R² Scores'))
+            fig.update_layout(
+                title='Cross-validation R² Scores Distribution',
+                yaxis_title='R² Score',
+                title_x=0.5
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col2:
+            # Feature importance
+            importance_df = pd.DataFrame({
+                'feature': X_train.columns,
+                'importance': model.feature_importances_
+            }).sort_values('importance', ascending=True).tail(10)
+            
+            fig = go.Figure(go.Bar(
+                x=importance_df['importance'],
+                y=importance_df['feature'],
+                orientation='h'
+            ))
+            fig.update_layout(
+                title='Top 10 Feature Importance',
+                xaxis_title='Importance Score',
+                yaxis_title='Feature',
+                title_x=0.5
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col3:
+            # Learning curve
+            train_sizes = np.linspace(0.1, 1.0, 10)
+            train_sizes, train_scores, test_scores = learning_curve(
+                model, X_train, y_train,
+                train_sizes=train_sizes,
+                cv=5,
+                scoring='r2'
+            )
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=train_sizes,
+                y=train_scores.mean(axis=1),
+                name='Training score'
+            ))
+            fig.add_trace(go.Scatter(
+                x=train_sizes,
+                y=test_scores.mean(axis=1),
+                name='Cross-validation score'
+            ))
+            fig.update_layout(
+                title='Learning Curve',
+                xaxis_title='Training Examples',
+                yaxis_title='R² Score',
+                title_x=0.5
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # 5. Prediction Error Analysis
+        st.subheader("5. Prediction Error Analysis")
+        error_percentage = (np.abs(y_test - y_pred_test) / y_test) * 100
+        
+        st.write(f"Mean Absolute Percentage Error: {error_percentage.mean():.2f}%")
+        st.write(f"Median Percentage Error: {np.median(error_percentage):.2f}%")
+        st.write(f"Predictions within 10% of actual value: {(error_percentage <= 10).mean() * 100:.2f}%")
+        st.write(f"Predictions within 20% of actual value: {(error_percentage <= 20).mean() * 100:.2f}%")
+
+        # Acceptance Criteria
+        st.subheader("Model Acceptance Criteria")
+        criteria_met = {
+            'R² Score > 0.7': r2_score(y_test, y_pred_test) >= 0.7,
+            'RMSE < $50,000': np.sqrt(mean_squared_error(y_test, y_pred_test)) <= 50000,
+            '80% predictions within 20%': (error_percentage <= 20).mean() * 100 >= 80
+        }
+        
+        for criterion, passed in criteria_met.items():
+            st.write(f"{criterion}: {'✅ PASSED' if passed else '❌ FAILED'}")
+        
+        if all(criteria_met.values()):
+            st.success("Model ACCEPTED for deployment")
+        else:
+            st.error("Model NEEDS IMPROVEMENT before deployment")
+            
+    except Exception as e:
+        logger.error(f"Error in validation suite: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
 
 def main():
     """Main application function"""
@@ -350,13 +504,16 @@ def main():
     st.title("🏠 House Price Predictor")
     
     # Create tabs
-    tab1, tab2 = st.tabs(["Train Model", "Make Predictions"])
+    tab1, tab2, tab3 = st.tabs(["Train Model", "Make Predictions", "Model Validation"])
     
     with tab1:
         load_and_train()
         
     with tab2:
         make_prediction()
+        
+    with tab3:
+        show_validation_results()
     
     # Add footer
     st.markdown("---")
