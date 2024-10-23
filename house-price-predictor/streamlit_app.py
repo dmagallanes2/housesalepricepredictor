@@ -311,23 +311,9 @@ def make_prediction():
                     neighborhood
                 ))
 
-                # Calculate market analysis values
-                similar_count = len(similar_props)
                 price_min = similar_props['SalePrice'].min()
                 price_avg = similar_props['SalePrice'].mean()
                 price_max = similar_props['SalePrice'].max()
-
-                # Market Analysis with better spacing
-                st.markdown("\n📈 **Market Analysis:**")
-                st.markdown(f"• Similar Properties: {similar_count}")
-                st.markdown("\n• Price Range in Area:")
-                st.markdown(f"""
-                - Minimum: ${price_min:,.2f}
-
-                - Average: ${price_avg:,.2f}
-
-                - Maximum: ${price_max:,.2f}
-                """)
                 
                 # Create three visualization columns
                 col1, col2, col3 = st.columns(3)
@@ -413,7 +399,8 @@ def show_validation_results():
         st.header("🔍 Model Validation Suite")
         st.markdown("""
         This section shows detailed analysis of model performance including cross-validation scores,
-        error metrics, and various visualizations of model behavior.
+        error metrics, and various visualizations of model behavior. Please allow up to 5 minutes for the testing to complete.
+        Deployment verification results will be found at the bottom when the testing has successfully ran.
         """)
         
         # Get model and data from session state
